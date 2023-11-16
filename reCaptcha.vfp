@@ -1,0 +1,86 @@
+<apex:page showHeader="false" applyBodyTag="false"> 
+    <apex:includeScript value="{!$Resource.Jquery}"/>  
+    <script src='https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit' type="application/javascript"/>    
+    <style>
+        body, div{
+            background:transparent !important;
+        }
+    	html {overflow:hidden;}
+        .recaptcha {
+            transform: scale(0.74);
+            transform-origin: 0 0;
+            -webkit-transform:scale(0.74);
+            -webkit-transform-origin: 0 0
+        }
+    	.body-tag div{
+        	height:100vh !important;
+            z-index:1;
+        }
+    </style>
+    
+    <body class="body-tag">
+    <div id="recaptcha-div" class="g-recaptcha recaptcha"></div>   
+    
+    <script type="text/javascript">
+        jQuery(function($){
+            var lastHeight = 0, curHeight = 0, $frame = $('iframe:eq(0)');
+            setInterval(function(){
+                curHeight = $frame.prevObject[0].activeElement.scrollHeight
+                if ( curHeight != lastHeight ) {
+                    debugger;
+                    var hostURL = 'https://paylinkdirect--uat--c.sandbox.vf.force.com';
+                    curHeight = curHeight && curHeight === 480 ? curHeight + 18 : curHeight;
+                    console.log('h' + curHeight);
+                    window.parent.postMessage({ action: 'heigthChange', height : curHeight + 'px' }, '*');  
+                }
+            },500);
+    	});
+        var callPostMethod = function (action, response) {
+            var hostURL = 'https://paylinkdirect--uat--c.sandbox.vf.force.com';
+        	window.parent.postMessage({ action: action, response : response },'*');    
+        }
+        var onVerifyCallback = function () {
+            console.log ('Verified');
+            let val = document.getElementById("g-recaptcha-response").value;
+            callPostMethod ('verified', val);
+        };
+        var onErrorCallback = function () {
+            console.log ('Error'); 
+            let val = document.getElementById("g-recaptcha-response").value;
+            callPostMethod ('error', val);
+        };
+        var onExpiredCallback = function () {
+            console.log ('Expired'); 
+            let val = document.getElementById("g-recaptcha-response").value;
+           	callPostMethod ('expired', val);
+        };
+        var onloadCallback = function() {
+            console.log ('Loaded'); 
+            callPostMethod ('loaded', '');
+            grecaptcha.render('recaptcha-div', {
+              'sitekey' : '--------------site-key----------', 
+              'theme' : 'light',
+              'callback' : onVerifyCallback,
+              'expired-callback' :onExpiredCallback,
+              'error-callback' : onErrorCallback
+            });
+        };
+
+
+        /*
+            Extra snippet to communicate with Aura component
+        */
+        window.addEventListener("message", function(event) {
+            var hostURL = 'https://paylinkdirect--uat--c.sandbox.vf.force.com';
+            if(event.origin !== hostURL){
+                return;
+            }
+            
+            if(event.data.action == "alohaCallingCAPTCHA"){  
+               var message = document.getElementById("g-recaptcha-response").value;  
+            }
+        }, false);
+        
+    </script>
+</body>
+</apex:page>
